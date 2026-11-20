@@ -2,6 +2,7 @@
 import asyncio
 from logging.config import fileConfig
 
+import geoalchemy2  # noqa: F401
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
@@ -13,6 +14,7 @@ from app.core.database import Base
 
 # Modellerin metadata'ya kaydolması için import edilmeleri gerekiyor
 from app.models import *  # noqa: F401, F403
+
 
 # ---------- Alembic config ----------
 config = context.config
@@ -33,6 +35,16 @@ def include_object(object, name, type_, reflected, compare_to):
         return False
     return True
 
+def render_item(type_, obj, autogen_context):
+    """
+    Migration dosyasına GeoAlchemy2 import'unu otomatik ekle.
+    Autogenerate 3. parti tipleri için import'u atlar, biz elle ekliyoruz.
+    """
+    if type_ == "type" and obj.__class__.__module__.startswith("geoalchemy2"):
+        autogen_context.imports.add("import geoalchemy2")
+        return False  # False = Alembic kendi default render'ını kullansın
+    return False
+
 
 def run_migrations_offline() -> None:
     """Offline mod: DB'ye bağlanmadan SQL script üret."""
@@ -43,6 +55,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         include_object=include_object,
+        render_item=render_item,
         compare_server_default=True,
         compare_type=True,
     )
@@ -55,6 +68,7 @@ def do_run_migrations(connection: Connection) -> None:
         connection=connection,
         target_metadata=target_metadata,
         include_object=include_object,
+        render_item=render_item,
         compare_server_default=True,
         compare_type=True,
     )

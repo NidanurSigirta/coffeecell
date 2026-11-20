@@ -14,6 +14,7 @@ from app.core.database import Base
 from app.models.base import TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.shop import Shop
     from app.models.subscription import Subscription
 
 
@@ -61,6 +62,10 @@ class User(Base, TimestampMixin):
     subscriptions: Mapped[list["Subscription"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    owned_shops: Mapped[list["Shop"]] = relationship(
+        back_populates="owner",
         lazy="selectin",
     )
 
