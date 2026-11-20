@@ -1,0 +1,19 @@
+# ============================================
+# CoffeeCell — Docker Compose
+# ============================================
+# Kullanım: docker compose up --build
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: coffeecell-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Local kod değiştiğinde konteyner anında görsün (hot reload)
+      - ./backend/app:/app/app
+    environment:
+      - APP_ENV=development
+    restart: unless-stopped

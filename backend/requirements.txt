@@ -1,0 +1,15 @@
+# ============================================
+# CoffeeCell Backend — Python Dependencies
+# ============================================
+# Not: Sürümler pin'lendi (sabit) → aynı kurulum her yerde garanti.
+
+# --- Web Framework ---
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+
+# --- Validation & Config ---
+pydantic==2.9.2
+pydantic-settings==2.6.1
+
+# --- Logging ---
+structlog==24.4.0
