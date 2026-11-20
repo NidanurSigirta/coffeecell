@@ -4,7 +4,6 @@
 # Kullanım: docker compose up --build
 
 services:
-  # ---------- PostgreSQL + PostGIS ----------
   postgres:
     image: postgis/postgis:16-3.4
     container_name: coffeecell-postgres
@@ -23,7 +22,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # ---------- Backend (FastAPI) ----------
   backend:
     build:
       context: ./backend
@@ -39,6 +37,8 @@ services:
       - "8000:8000"
     volumes:
       - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+      - ./backend/alembic.ini:/app/alembic.ini
 
 volumes:
   pgdata:
