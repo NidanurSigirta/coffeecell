@@ -2,15 +2,19 @@
 
 Case referansı: 3.1 Kullanıcı Yönetimi + 5. Veritabanı Şeması (Users Tablosu).
 """
-from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, DateTime, Enum as SQLEnum, String, func
+from sqlalchemy import Boolean, Enum as SQLEnum, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.models.base import TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.subscription import Subscription
 
 
 class UserRole(str, Enum):
@@ -20,7 +24,7 @@ class UserRole(str, Enum):
     ADMIN = "ADMIN"
 
 
-class User(Base):
+class User(Base, TimestampMixin):
     """Platform kullanıcıları."""
 
     __tablename__ = "users"
@@ -37,40 +41,27 @@ class User(Base):
         index=True,
         comment="GSM numarası, E.164 formatında (ör: +905551234567)",
     )
-    full_name: Mapped[str] = mapped_column(
-        String(100),
-        nullable=False,
-    )
-    email: Mapped[str | None] = mapped_column(
-        String(255),
-        nullable=True,
-        unique=True,
-    )
+    full_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
     role: Mapped[UserRole] = mapped_column(
         SQLEnum(UserRole, name="user_role_enum"),
         nullable=False,
         default=UserRole.CUSTOMER,
+        server_default="CUSTOMER",
+
     )
     preferences: Mapped[dict | None] = mapped_column(
         JSONB,
         nullable=True,
         comment="Kahve tercihleri, alerjen bilgileri vs.",
     )
-    is_active: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=True,
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        server_default=func.now(),
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        server_default=func.now(),
-        onupdate=func.now(),
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
+
+    # ---------- İlişkiler ----------
+    subscriptions: Mapped[list["Subscription"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
     def __repr__(self) -> str:
