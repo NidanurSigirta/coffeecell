@@ -1,40 +1,65 @@
 """CoffeeCell — FastAPI application entry point."""
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
-# ---------- Uygulama ----------
+from app.core.config import settings
+from app.core.database import engine
+
+
+# ---------- Lifespan: startup & shutdown ----------
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Uygulama açılırken ve kapanırken çalışan kod.
+    Burada DB'ye bir 'ping' atıyoruz — bağlantı sağlam mı diye.
+    """
+    # STARTUP
+    async with engine.begin() as conn:
+        result = await conn.execute(text("SELECT 1"))
+        print(f"✅ Database connection OK — SELECT 1 → {result.scalar()}")
+
+    yield
+
+    # SHUTDOWN
+    await engine.dispose()
+    print("👋 Database connection closed")
+
+
+# ---------- Application ----------
 app = FastAPI(
-    title="CoffeeCell API",
+    title=f"{settings.app_name} API",
     description="Dijital kahve abonelik platformu — Turkcell AI Bootcamp case study",
     version="0.1.0",
-    docs_url="/docs",       # Swagger UI
-    redoc_url="/redoc",     # Alternatif dokümantasyon
+    docs_url="/docs",
+    redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # ---------- CORS ----------
-# Frontend (http://localhost:5173) backend'e istek atabilsin diye.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# ---------- Health check endpoint ----------
+# ---------- Endpoints ----------
 @app.get("/", tags=["Root"])
 def root():
-    """Root endpoint — uygulamanın ayakta olduğunu doğrulamak için."""
     return {
-        "name": "CoffeeCell API",
+        "name": f"{settings.app_name} API",
         "version": "0.1.0",
         "status": "running",
+        "env": settings.app_env,
         "docs": "/docs",
     }
 
 
 @app.get("/health", tags=["Health"])
 def health_check():
-    """Health check — Docker/Kubernetes'in servisi canlı mı diye yoklaması için."""
     return {"status": "healthy"}
